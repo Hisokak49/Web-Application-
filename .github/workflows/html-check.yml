@@ -1,0 +1,42 @@
+name: HTML Validation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-html:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate HTML structure
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from html.parser import HTMLParser
+
+          class Validator(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.html_count = 0
+                  self.errors = []
+
+              def handle_starttag(self, tag, attrs):
+                  if tag == "html":
+                      self.html_count += 1
+
+          parser = Validator()
+          parser.feed(Path("index.html").read_text(encoding="utf-8"))
+
+          if parser.html_count != 1:
+              raise SystemExit(f"Expected exactly one <html> element, found {parser.html_count}")
+
+          print("index.html contains exactly one root <html> element.")
+          PY
